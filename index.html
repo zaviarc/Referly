@@ -140,6 +140,24 @@ table.cost{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
 .closed #ring-close{stroke-dashoffset:0;transition:stroke-dashoffset 1.1s ease .2s}
 @media (prefers-reduced-motion:reduce){.closed #ring-close{transition:none}}
 
+.calhead{display:flex;justify-content:space-between;align-items:center;margin:10px 0 6px}
+.calhead b{font-size:14px}
+.calhead button{border:1px solid #C9D2D6;background:#fff;border-radius:6px;width:32px;height:32px;font-size:18px;line-height:1;cursor:pointer;color:var(--teal)}
+.calhead button:disabled{opacity:.3;cursor:default}
+.dow,.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.dow span{font-size:11px;color:var(--muted);padding-bottom:2px}
+.day{height:36px;border-radius:8px;border:0;background:none;font-size:13px;color:#A9B3B8;font-family:var(--ui);position:relative;padding:0}
+.day.av{color:var(--ink);font-weight:600;background:#EEF6F7;cursor:pointer}
+.day.av::after{content:"";position:absolute;left:50%;bottom:4px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--teal)}
+.day.sel{background:var(--teal);color:#fff}
+.day.sel::after{background:#fff}
+.day.today{box-shadow:inset 0 0 0 1px #C9D2D6}
+.times{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.time{border:1px solid #C9D2D6;border-radius:999px;padding:7px 11px;font-size:13px;background:#fff;cursor:pointer;font-family:var(--ui);color:var(--ink)}
+.time.sel{background:var(--info-bg);border:2px solid var(--teal);padding:6px 10px;font-weight:700}
+.feeline{margin-top:8px;background:#FDF3DC;border-radius:8px;padding:7px 10px;font-size:13px}
+.feeline span{color:#5B4A2A}
+.legend{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--teal);margin-right:5px;vertical-align:1px}
 /* whose screen is this: big and unmissable */
 .viewer{max-width:420px;margin:0 auto 10px;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:2px solid var(--deck-navy)}
 .viewer .av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:15px;color:#fff;flex:none}
@@ -287,10 +305,13 @@ label.opt input:focus-visible + .box{outline:3px solid var(--focus);outline-offs
             <div class="card todo">
               <p class="h" style="margin-bottom:2px">Book your dermatology appointment</p>
               <div class="sub">Dr Chloe Martin · referred by Dr Nguyen · <span id="bookUrg">Semi-urgent</span></div>
-              <div class="slots before" role="radiogroup" aria-label="Appointment time">
-                <button type="button" class="slot sel" role="radio" aria-checked="true" data-slot="0"><b>Wed 25</b>2:00 pm</button>
-                <button type="button" class="slot" role="radio" aria-checked="false" data-slot="1"><b>Thu 26</b>9:15 am</button>
-                <button type="button" class="slot" role="radio" aria-checked="false" data-slot="2"><b>Fri 27</b>11:30 am</button>
+              <div class="feeline before"><b id="feeNow">You pay about $191.60</b> <span>(est.) · fee $280.00, details below</span></div>
+              <div class="cal before">
+                <div class="calhead"><button type="button" id="calPrev" aria-label="Previous month">&#8249;</button><b id="calTitle">November 2026</b><button type="button" id="calNext" aria-label="Next month">&#8250;</button></div>
+                <div class="dow" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+                <div class="calgrid" id="calGrid" role="grid" aria-label="Choose a day"></div>
+                <div class="times" id="calTimes" role="radiogroup" aria-label="Choose a time"></div>
+                <p class="fine"><span class="legend"></span>Days with times free. <span id="firstFree"></span></p>
               </div>
             </div>
             <div class="card">
@@ -404,11 +425,46 @@ label.opt input:focus-visible + .box{outline:3px solid var(--focus);outline-offs
 <script>
 (function(){
   var steps=["start","refer","triage","book","refill","loop","end"];
-  var st={sms:true,print:true,urg:"Semi-urgent",slot:0,pay:"appt"};
-  var slots=[{d:"Wed 25 Nov",t:"2:00 pm",day:25},{d:"Thu 26 Nov",t:"9:15 am",day:26},{d:"Fri 27 Nov",t:"11:30 am",day:27}];
+  var TODAY=new Date(2026,10,16), OFFER=new Date(2026,10,19);
+  var DN=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], MN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"], MFULL=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  var FULL={"2026-12-2":1,"2026-12-9":1,"2026-12-16":1};
+  function key(d){return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+  function fmt(d){return DN[d.getDay()]+" "+d.getDate()+" "+MN[d.getMonth()];}
+  function timesFor(d){
+    var wd=d.getDay(); if(wd===0||wd===6)return [];
+    if(d<new Date(2026,10,25))return [];
+    if(d>new Date(2026,11,18))return [];
+    if(FULL[key(d)])return [];
+    var sets=[["8:30 am","11:00 am","2:00 pm"],["9:15 am","2:00 pm"],["10:00 am","1:30 pm","3:45 pm","4:30 pm"]];
+    return sets[d.getDate()%3];
+  }
+  function firstFree(){var d=new Date(TODAY);for(var i=0;i<60;i++){if(timesFor(d).length)return d;d.setDate(d.getDate()+1);}return d;}
+  var FIRST=firstFree();
+  function freshState(){return {sms:true,print:true,urg:"Semi-urgent",date:new Date(FIRST),time:timesFor(FIRST)[0],pay:"appt",view:10};}
+  var st=freshState();
   var urgInfo={"Urgent":"Book within 48 hours.","Semi-urgent":"Book within 2 weeks.","Routine":"Book within 6 weeks."};
-  var labels={refer:function(){return "Send referral";},triage:function(){return "Accept as "+st.urg.toLowerCase();},book:function(){return "Book "+slots[st.slot].d;},refill:function(){return "Take Thu 19 Nov";},loop:function(){return "Acknowledge";}};
+  var labels={refer:function(){return "Send referral";},triage:function(){return "Accept as "+st.urg.toLowerCase();},book:function(){return "Book "+fmt(st.date)+", "+st.time;},refill:function(){return "Take Thu 19 Nov";},loop:function(){return "Acknowledge";}};
   function $(id){return document.getElementById(id);}
+  function renderCal(){
+    var y=2026,m=st.view;$("calTitle").textContent=MFULL[m]+" "+y;
+    $("calPrev").disabled=(m<=10);$("calNext").disabled=(m>=11);
+    var g=$("calGrid");g.innerHTML="";
+    var first=new Date(y,m,1),lead=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate();
+    for(var i=0;i<lead;i++){var e=document.createElement("span");g.appendChild(e);}
+    for(var dnum=1;dnum<=days;dnum++){
+      var d=new Date(y,m,dnum),b=document.createElement("button");b.type="button";b.className="day";b.textContent=dnum;
+      var t=timesFor(d);
+      if(key(d)===key(TODAY))b.classList.add("today");
+      if(t.length){b.classList.add("av");b.setAttribute("aria-label",fmt(d)+", "+t.length+" times free");(function(dd){b.addEventListener("click",function(){st.date=dd;st.time=timesFor(dd)[0];render();setButtons();});})(d);}
+      else{b.disabled=true;b.setAttribute("aria-label",fmt(d)+", no times");}
+      if(key(d)===key(st.date)){b.classList.add("sel");b.setAttribute("aria-current","date");}
+      g.appendChild(b);
+    }
+    var tw=$("calTimes");tw.innerHTML="";
+    timesFor(st.date).forEach(function(tt){var b=document.createElement("button");b.type="button";b.className="time"+(tt===st.time?" sel":"");b.setAttribute("role","radio");b.setAttribute("aria-checked",tt===st.time);b.textContent=tt;
+      b.addEventListener("click",function(){st.time=tt;render();setButtons();});tw.appendChild(b);});
+    $("firstFree").textContent="First free: "+fmt(FIRST)+".";
+  }
   function render(){
     $("chkSms").nextElementSibling.classList.toggle("on",st.sms);
     $("chkPrint").nextElementSibling.classList.toggle("on",st.print);
@@ -418,13 +474,14 @@ label.opt input:focus-visible + .box{outline:3px solid var(--focus);outline-offs
     document.querySelectorAll("[data-urg]").forEach(function(b){var on=b.dataset.urg===st.urg;b.classList.toggle("semi",on);b.setAttribute("aria-checked",on);});
     $("accHead").textContent="Accepted: "+st.urg.toLowerCase();$("accPill").textContent=st.urg;
     $("bookUrg").textContent=st.urg;$("tlAcc").firstChild.nodeValue="Accepted, "+st.urg.toLowerCase();
-    document.querySelectorAll("[data-slot]").forEach(function(b){var on=+b.dataset.slot===st.slot;b.classList.toggle("sel",on);b.setAttribute("aria-checked",on);});
-    var sl=slots[st.slot];
-    $("bookBtn").textContent="Book "+sl.d;$("bookedHead").textContent="Booked: "+sl.d+", "+sl.t;
+    renderCal();
+    var dd=fmt(st.date);
+    $("bookBtn").textContent="Book "+dd+", "+st.time;$("bookedHead").textContent="Booked: "+dd+", "+st.time;
     $("bookedBody").textContent=st.pay==="pre"?"Prepaid. You'll pay about $163.60 after your rebate.":"You'll pay about $191.60 at the appointment, after your rebate.";
     document.querySelectorAll("[data-pay]").forEach(function(b){b.setAttribute("aria-checked",b.dataset.pay===st.pay);});
-    $("oldDate").textContent=sl.d;$("sooner").textContent=(sl.day-19)+" days sooner.";
-    $("tlBook").firstChild.nodeValue="Booked for "+sl.d;
+    $("feeNow").textContent="You pay about "+(st.pay==="pre"?"$163.60":"$191.60");
+    $("oldDate").textContent=dd;var gap=Math.round((st.date-OFFER)/864e5);$("sooner").textContent=gap+(gap===1?" day":" days")+" sooner.";
+    $("tlBook").firstChild.nodeValue="Booked for "+dd;
   }
   var nextName=["Start","Next","Next","Next","Next","Finish"];
   var frames=[].slice.call(document.querySelectorAll(".frame"));
@@ -454,7 +511,7 @@ label.opt input:focus-visible + .box{outline:3px solid var(--focus);outline-offs
   }
   function act(){if(steps[idx]==="refer"&&!st.sms&&!st.print){$("referErr").classList.add("show");return;}var f=frames[idx];done[idx]=true;f.dataset.state="after";f.querySelector(".screenwrap").scrollTop=0;setButtons();paint();}
   function primary(){
-    if(steps[idx]==="end"){done={};st={sms:true,print:true,urg:"Semi-urgent",slot:0,pay:"appt"};$("chkSms").checked=true;$("chkPrint").checked=true;render();show(0);return;}
+    if(steps[idx]==="end"){done={};st=freshState();$("chkSms").checked=true;$("chkPrint").checked=true;render();show(0);return;}
     if(hasAction(idx)&&!done[idx]){act();return;}
     show(idx+1);
   }
@@ -465,7 +522,8 @@ label.opt input:focus-visible + .box{outline:3px solid var(--focus);outline-offs
   $("chkSms").addEventListener("change",function(e){st.sms=e.target.checked;render();});
   $("chkPrint").addEventListener("change",function(e){st.print=e.target.checked;render();});
   document.querySelectorAll("[data-urg]").forEach(function(b){b.addEventListener("click",function(){st.urg=b.dataset.urg;render();setButtons();});});
-  document.querySelectorAll("[data-slot]").forEach(function(b){b.addEventListener("click",function(){st.slot=+b.dataset.slot;render();setButtons();});});
+  $("calPrev").addEventListener("click",function(){st.view=10;render();});
+  $("calNext").addEventListener("click",function(){st.view=11;render();});
   document.querySelectorAll("[data-pay]").forEach(function(b){b.addEventListener("click",function(){st.pay=b.dataset.pay;render();});});
   $("askMore").addEventListener("click",function(){$("askNote").style.display="block";});
   chaps.forEach(function(c){c.addEventListener("click",function(){var t=+c.dataset.go;for(var k=1;k<t;k++)done[k]=true;show(t);});});
