@@ -140,6 +140,28 @@ table.cost{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
 .closed #ring-close{stroke-dashoffset:0;transition:stroke-dashoffset 1.1s ease .2s}
 @media (prefers-reduced-motion:reduce){.closed #ring-close{transition:none}}
 
+/* whose screen is this: big and unmissable */
+.viewer{max-width:420px;margin:0 auto 10px;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:2px solid var(--deck-navy)}
+.viewer .av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:15px;color:#fff;flex:none}
+.viewer b{display:block;font-size:17px;line-height:1.2;color:#000}
+.viewer span{display:block;font-size:13px;color:#33424D}
+.viewer.gp{background:#C1E6FF;border-color:#004165}.viewer.gp .av{background:#004165}
+.viewer.sp{background:#FDF3DC;border-color:#8A5A12}.viewer.sp .av{background:#8A5A12}
+.viewer.pt{background:#FCE4E4;border-color:#C0382D}.viewer.pt .av{background:#C0382D}
+button.chip,button.slot,.paysel{cursor:pointer;font-family:var(--ui)}
+button.chip{font-size:13px;padding:6px 10px}
+button.slot{width:100%}
+.paysel{display:flex;align-items:center;justify-content:space-between;width:100%;border:0;background:none;padding:8px 0;border-bottom:1px solid #EDF0F2;font-size:13px;text-align:left;color:var(--ink)}
+.paysel[aria-checked="true"]{font-weight:700}
+.paysel .r{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid #8A979D;vertical-align:-2px;margin-right:6px}
+.paysel[aria-checked="true"] .r{border:4px solid var(--teal)}
+.costhead{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--muted);padding:4px 0 6px;border-bottom:1px solid var(--card-line)}
+label.opt{cursor:pointer}
+label.opt input{position:absolute;opacity:0;width:1px;height:1px}
+label.opt input:focus-visible + .box{outline:3px solid var(--focus);outline-offset:2px}
+.err{color:#A23A22;font-size:13px;font-weight:600;margin-top:6px;display:none}
+.err.show{display:block}
+
 @media (min-width:880px){
   .top{padding:14px 32px 12px}
   .brandrow,.chapters{max-width:860px;margin-left:auto;margin-right:auto}
@@ -190,10 +212,11 @@ table.cost{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
     <!-- 1 REFER: GP in Referly Desk -->
     <section class="frame" id="f1" data-step="refer" data-state="before">
       <div class="screenwrap">
+        <div class="viewer gp"><span class="av">TN</span><div><b>You're Dr Nguyen, Maria's GP</b><span>Referly Desk, on his computer</span></div></div>
         <div class="app">
           <div class="deskbar"><span class="tile">R</span><b>Referly Desk</b><span class="who">Dr Nguyen, GP</span></div>
           <div class="body">
-            <div class="band ok after"><b>Referral sent</b>Maria's booking link is on its way by SMS.<br><span class="ref">Referral RF-7MG2KD</span></div>
+            <div class="band ok after"><b>Referral sent</b><span id="sentHow">Maria's booking link is on its way by SMS.</span><br><span class="ref">Referral RF-7MG2KD</span></div>
             <div class="card">
               <p class="h">New referral</p>
               <div class="row"><span class="lbl">Patient</span><span class="val">Maria Garcia, 76</span></div>
@@ -202,9 +225,10 @@ table.cost{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
             </div>
             <div class="card before">
               <p class="h" style="font-size:14px">Send the booking link by</p>
-              <div class="opt"><span class="box on"></span>SMS to 04•• ••• 218</div>
+              <label class="opt"><input type="checkbox" id="chkSms" checked><span class="box on"></span>SMS to 04•• ••• 218</label>
               <div class="opt dim"><span class="box off"></span>Email <span class="sub">(none on file)</span></div>
-              <div class="opt"><span class="box on"></span>Print a paper copy</div>
+              <label class="opt"><input type="checkbox" id="chkPrint" checked><span class="box on"></span>Print a paper copy</label>
+              <p class="err" id="referErr">Choose at least one way to reach Maria.</p>
             </div>
             <button class="btn hot before" type="button" data-act>Send referral</button>
           </div>
@@ -219,23 +243,29 @@ table.cost{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
     <!-- 2 TRIAGE: specialist in Referly Desk -->
     <section class="frame" id="f2" data-step="triage" data-state="before">
       <div class="screenwrap">
+        <div class="viewer sp"><span class="av">CM</span><div><b>You're Dr Martin, the dermatologist</b><span>Referly Desk, in her rooms</span></div></div>
         <div class="app">
           <div class="deskbar"><span class="tile">R</span><b>Referly Desk</b><span class="who">Dr Chloe Martin, Dermatologist</span></div>
           <div class="body">
             <div class="card">
               <p class="h">Triage inbox</p>
-              <div class="row"><div><b>Maria Garcia, 76</b><div class="sub">Possible melanoma · from Dr Nguyen</div></div><span class="pill new before">New</span><span class="pill ok after">Accepted</span></div>
+              <div class="row"><div><b>Maria Garcia, 76</b><div class="sub">Possible melanoma · from Dr Nguyen</div></div><span class="pill new before">New</span><span class="pill ok after" id="accPill">Semi-urgent</span></div>
               <div class="before" style="padding-top:8px">
                 <div class="lbl" style="margin-bottom:6px">Urgency</div>
-                <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip">Urgent</span><span class="chip semi">Semi-urgent</span><span class="chip">Routine</span></div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap" role="radiogroup" aria-label="Urgency">
+                  <button type="button" class="chip" role="radio" aria-checked="false" data-urg="Urgent">Urgent</button>
+                  <button type="button" class="chip semi" role="radio" aria-checked="true" data-urg="Semi-urgent">Semi-urgent</button>
+                  <button type="button" class="chip" role="radio" aria-checked="false" data-urg="Routine">Routine</button>
+                </div>
               </div>
               <div class="row"><div><b>Patient B</b><div class="sub">Eczema review</div></div><span class="pill new">New</span></div>
               <div class="row"><div><b>Patient C</b><div class="sub">Acne, routine</div></div><span class="pill new">New</span></div>
             </div>
-            <div class="band ok after"><b>Accepted: semi-urgent</b>Maria can now book. Dr Nguyen can see it arrived.</div>
+            <div class="band ok after"><b id="accHead">Accepted: semi-urgent</b>Maria can now book, and Dr Nguyen can see it arrived.</div>
             <div class="before">
               <button class="btn hot" type="button" data-act>Accept and set urgency</button>
-              <button class="link" type="button" tabindex="-1">Ask the GP for more information</button>
+              <button class="link" type="button" id="askMore" style="cursor:pointer">Ask the GP for more information</button>
+              <p class="fine" id="askNote" style="display:none">In the real app this sends Dr Nguyen a request for more detail. For this demo, accept the referral to carry on.</p>
             </div>
           </div>
         </div>
@@ -249,29 +279,30 @@ table.cost{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
     <!-- 3 BOOK AND PAY: patient in the Referly app -->
     <section class="frame" id="f3" data-step="book" data-state="before">
       <div class="screenwrap">
+        <div class="viewer pt"><span class="av">MG</span><div><b>You're Maria, on her phone</b><span>Referly app, opened from the link in her SMS</span></div></div>
         <div class="app">
           <div class="patbar"><span class="tile">R</span><b>Referly</b><span class="who">Hi Maria</span></div>
           <div class="body">
-            <div class="band ok after"><b>Booked: Wed 25 Nov, 2:00 pm</b>You're on the waitlist for an earlier time.</div>
+            <div class="band ok after"><b id="bookedHead">Booked: Wed 25 Nov, 2:00 pm</b><span id="bookedBody">You'll pay about $191.60 at the appointment.</span> You're on the waitlist for an earlier time.</div>
             <div class="card todo">
               <p class="h" style="margin-bottom:2px">Book your dermatology appointment</p>
-              <div class="sub">Dr Chloe Martin · referred by Dr Nguyen</div>
-              <div class="slots before">
-                <div class="slot sel"><b>Wed 25</b>2:00 pm</div>
-                <div class="slot"><b>Thu 26</b>9:15 am</div>
-                <div class="slot"><b>Fri 27</b>11:30 am</div>
+              <div class="sub">Dr Chloe Martin · referred by Dr Nguyen · <span id="bookUrg">Semi-urgent</span></div>
+              <div class="slots before" role="radiogroup" aria-label="Appointment time">
+                <button type="button" class="slot sel" role="radio" aria-checked="true" data-slot="0"><b>Wed 25</b>2:00 pm</button>
+                <button type="button" class="slot" role="radio" aria-checked="false" data-slot="1"><b>Thu 26</b>9:15 am</button>
+                <button type="button" class="slot" role="radio" aria-checked="false" data-slot="2"><b>Fri 27</b>11:30 am</button>
               </div>
             </div>
             <div class="card">
               <p class="h" style="font-size:14px">What you'll pay</p>
-              <table class="cost">
-                <tr><th>How you pay</th><th>Your gap</th></tr>
-                <tr><td><span class="r"></span>Prepay now (10% off)</td><td>$163.60</td></tr>
-                <tr class="sel"><td><span class="r"></span>Pay at the appointment</td><td>$191.60</td></tr>
-              </table>
-              <p class="fine">Fee $280.00 · Medicare rebate $88.40 · No booking fee</p>
+              <div class="costhead"><span>How you pay</span><span>You pay (est.)</span></div>
+              <div role="radiogroup" aria-label="How you pay">
+                <button type="button" class="paysel" role="radio" aria-checked="false" data-pay="pre"><span><span class="r"></span>Prepay now (10% off)</span><span>$163.60</span></button>
+                <button type="button" class="paysel" role="radio" aria-checked="true" data-pay="appt"><span><span class="r"></span>Pay at the appointment</span><span>$191.60</span></button>
+              </div>
+              <p class="fine">Fee $280.00 · Estimated Medicare rebate $88.40 · No booking fee</p>
             </div>
-            <button class="btn hot before" type="button" data-act>Book Wed 25 Nov</button>
+            <button class="btn hot before" type="button" data-act id="bookBtn">Book Wed 25 Nov</button>
           </div>
         </div>
       </div>
@@ -284,29 +315,30 @@ table.cost{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
     <!-- 4 REFILL: waitlist offer by SMS -->
     <section class="frame" id="f4" data-step="refill" data-state="before">
       <div class="screenwrap">
+        <div class="viewer pt"><span class="av">MG</span><div><b>You're Maria, on her phone</b><span>A text arrives two days later</span></div></div>
         <div class="app">
           <div class="patbar"><span class="tile">R</span><b>Referly</b><span class="who">Hi Maria</span></div>
           <div class="body">
             <div class="sms">
-              <div class="from">SMS from Referly</div>
-              <div class="bubble">Hi Maria, an earlier time with Dr Martin is free: Thu 19 Nov, 9:00 am. Tap to take it.</div>
+              <div class="from">SMS from Referly · Tue 17 Nov, 7:42 am</div>
+              <div class="bubble">Hi Maria, a time with Dr Martin has opened: Thu 19 Nov, 9:00 am. It's held for you until 10 am. Tap to take it.</div>
             </div>
             <div class="card">
-              <p class="h" style="font-size:14px">Earlier time available</p>
+              <p class="h" style="font-size:14px">Earlier time held for you</p>
               <div class="move">
-                <div class="old"><small>Booked</small><strong>Wed 25 Nov</strong></div>
+                <div class="old"><small>Booked</small><strong id="oldDate">Wed 25 Nov</strong></div>
                 <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M13 6l6 6-6 6" fill="none" stroke="#5B6670" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <div class="new"><small>Offered</small><strong>Thu 19 Nov</strong></div>
               </div>
-              <p class="fine">Same fee. First to tap gets it.</p>
+              <p class="fine">Offered by urgency: you're the most urgent patient on Dr Martin's waitlist. Same fee.</p>
             </div>
             <button class="btn hot before" type="button" data-act>Take Thu 19 Nov</button>
-            <div class="band ok after"><b>Moved to Thu 19 Nov, 9:00 am</b>6 days sooner. We'll remind you 48 hours before.</div>
+            <div class="band ok after"><b>Moved to Thu 19 Nov, 9:00 am</b><span id="sooner">6 days sooner.</span> We'll remind you 48 hours before.</div>
           </div>
         </div>
       </div>
       <div class="sheet">
-        <h2>A cancelled time goes to the waitlist.</h2><div class="rule"></div>
+        <h2>A cancelled time goes to the most urgent patient waiting.</h2><div class="rule"></div>
         <div class="actions"><button class="back" type="button" data-back>Back</button><button class="primary" type="button" data-primary></button></div>
       </div>
     </section>
@@ -314,6 +346,7 @@ table.cost{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
     <!-- 5 CLOSE THE LOOP: GP inbox in Referly Desk -->
     <section class="frame" id="f5" data-step="loop" data-state="before">
       <div class="screenwrap">
+        <div class="viewer gp"><span class="av">TN</span><div><b>You're Dr Nguyen again, the GP</b><span>Referly Desk inbox, the same afternoon</span></div></div>
         <div class="app">
           <div class="deskbar"><span class="tile">R</span><b>Referly Desk</b><span class="who">Dr Nguyen, GP</span></div>
           <div class="body">
@@ -327,8 +360,9 @@ table.cost{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
               <p class="h" style="font-size:14px">Referral RF-7MG2KD</p>
               <ol class="steps">
                 <li>Sent<span>Mon 16 Nov</span></li>
-                <li>Accepted, semi-urgent<span>Mon 16 Nov</span></li>
-                <li>Booked<span>Mon 16 Nov</span></li>
+                <li id="tlAcc">Accepted, semi-urgent<span>Mon 16 Nov</span></li>
+                <li id="tlBook">Booked for Wed 25 Nov<span>Mon 16 Nov</span></li>
+                <li>Moved to Thu 19 Nov<span>Tue 17 Nov</span></li>
                 <li>Seen<span>Thu 19 Nov</span></li>
                 <li><b>Letter received</b><span class="pill ok">Thu 19 Nov</span></li>
               </ol>
@@ -337,7 +371,7 @@ table.cost{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
         </div>
       </div>
       <div class="sheet">
-        <h2>The letter lands in the GP's inbox.</h2><div class="rule"></div>
+        <h2>The letter lands back in the GP's inbox.</h2><div class="rule"></div>
         <div class="actions"><button class="back" type="button" data-back>Back</button><button class="primary" type="button" data-primary></button></div>
       </div>
     </section>
@@ -370,7 +404,28 @@ table.cost{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
 <script>
 (function(){
   var steps=["start","refer","triage","book","refill","loop","end"];
-  var labels={refer:"Send referral",triage:"Accept and set urgency",book:"Book Wed 25 Nov",refill:"Take Thu 19 Nov",loop:"Acknowledge"};
+  var st={sms:true,print:true,urg:"Semi-urgent",slot:0,pay:"appt"};
+  var slots=[{d:"Wed 25 Nov",t:"2:00 pm",day:25},{d:"Thu 26 Nov",t:"9:15 am",day:26},{d:"Fri 27 Nov",t:"11:30 am",day:27}];
+  var urgInfo={"Urgent":"Book within 48 hours.","Semi-urgent":"Book within 2 weeks.","Routine":"Book within 6 weeks."};
+  var labels={refer:function(){return "Send referral";},triage:function(){return "Accept as "+st.urg.toLowerCase();},book:function(){return "Book "+slots[st.slot].d;},refill:function(){return "Take Thu 19 Nov";},loop:function(){return "Acknowledge";}};
+  function $(id){return document.getElementById(id);}
+  function render(){
+    $("chkSms").nextElementSibling.classList.toggle("on",st.sms);
+    $("chkPrint").nextElementSibling.classList.toggle("on",st.print);
+    var how=st.sms&&st.print?"Maria's booking link is on its way by SMS, with a printed copy.":st.sms?"Maria's booking link is on its way by SMS.":"Maria takes a printed copy with her booking link.";
+    $("sentHow").textContent=how;
+    if(st.sms||st.print)$("referErr").classList.remove("show");
+    document.querySelectorAll("[data-urg]").forEach(function(b){var on=b.dataset.urg===st.urg;b.classList.toggle("semi",on);b.setAttribute("aria-checked",on);});
+    $("accHead").textContent="Accepted: "+st.urg.toLowerCase();$("accPill").textContent=st.urg;
+    $("bookUrg").textContent=st.urg;$("tlAcc").firstChild.nodeValue="Accepted, "+st.urg.toLowerCase();
+    document.querySelectorAll("[data-slot]").forEach(function(b){var on=+b.dataset.slot===st.slot;b.classList.toggle("sel",on);b.setAttribute("aria-checked",on);});
+    var sl=slots[st.slot];
+    $("bookBtn").textContent="Book "+sl.d;$("bookedHead").textContent="Booked: "+sl.d+", "+sl.t;
+    $("bookedBody").textContent=st.pay==="pre"?"Prepaid. You'll pay about $163.60 after your rebate.":"You'll pay about $191.60 at the appointment, after your rebate.";
+    document.querySelectorAll("[data-pay]").forEach(function(b){b.setAttribute("aria-checked",b.dataset.pay===st.pay);});
+    $("oldDate").textContent=sl.d;$("sooner").textContent=(sl.day-19)+" days sooner.";
+    $("tlBook").firstChild.nodeValue="Booked for "+sl.d;
+  }
   var nextName=["Start","Next","Next","Next","Next","Finish"];
   var frames=[].slice.call(document.querySelectorAll(".frame"));
   var chaps=[].slice.call(document.querySelectorAll(".chap"));
@@ -379,7 +434,7 @@ table.cost{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
   function setButtons(){
     var p=frames[idx].querySelector("[data-primary]");
     if(!p||steps[idx]==="start"||steps[idx]==="end")return;
-    if(hasAction(idx)&&!done[idx]){p.textContent=labels[steps[idx]];p.classList.add("act");}
+    if(hasAction(idx)&&!done[idx]){p.textContent=labels[steps[idx]]();p.classList.add("act");}
     else{p.textContent=nextName[idx];p.classList.remove("act");}
   }
   function paint(){
@@ -397,9 +452,9 @@ table.cost{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
     setButtons();paint();
     if(!fromHash){try{history.replaceState(null,"",idx===0?location.pathname+location.search:"#"+steps[idx]);}catch(e){}}
   }
-  function act(){var f=frames[idx];done[idx]=true;f.dataset.state="after";f.querySelector(".screenwrap").scrollTop=0;setButtons();paint();}
+  function act(){if(steps[idx]==="refer"&&!st.sms&&!st.print){$("referErr").classList.add("show");return;}var f=frames[idx];done[idx]=true;f.dataset.state="after";f.querySelector(".screenwrap").scrollTop=0;setButtons();paint();}
   function primary(){
-    if(steps[idx]==="end"){done={};show(0);return;}
+    if(steps[idx]==="end"){done={};st={sms:true,print:true,urg:"Semi-urgent",slot:0,pay:"appt"};$("chkSms").checked=true;$("chkPrint").checked=true;render();show(0);return;}
     if(hasAction(idx)&&!done[idx]){act();return;}
     show(idx+1);
   }
@@ -407,8 +462,15 @@ table.cost{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
   document.querySelectorAll("[data-primary]").forEach(function(b){b.addEventListener("click",primary);});
   document.querySelectorAll("[data-back]").forEach(function(b){b.addEventListener("click",back);});
   document.querySelectorAll("[data-act]").forEach(function(b){b.addEventListener("click",function(){if(!done[idx])act();});});
+  $("chkSms").addEventListener("change",function(e){st.sms=e.target.checked;render();});
+  $("chkPrint").addEventListener("change",function(e){st.print=e.target.checked;render();});
+  document.querySelectorAll("[data-urg]").forEach(function(b){b.addEventListener("click",function(){st.urg=b.dataset.urg;render();setButtons();});});
+  document.querySelectorAll("[data-slot]").forEach(function(b){b.addEventListener("click",function(){st.slot=+b.dataset.slot;render();setButtons();});});
+  document.querySelectorAll("[data-pay]").forEach(function(b){b.addEventListener("click",function(){st.pay=b.dataset.pay;render();});});
+  $("askMore").addEventListener("click",function(){$("askNote").style.display="block";});
   chaps.forEach(function(c){c.addEventListener("click",function(){var t=+c.dataset.go;for(var k=1;k<t;k++)done[k]=true;show(t);});});
   document.addEventListener("keydown",function(e){
+    var t=e.target;if(t&&(t.getAttribute&&t.getAttribute("role")==="radio"||t.tagName==="INPUT"))return;
     if(e.key==="ArrowRight"){primary();e.preventDefault();}
     if(e.key==="ArrowLeft"){back();e.preventDefault();}
   });
@@ -418,7 +480,7 @@ table.cost{width:100%;border-collapse:collapse;font-size:13px;font-variant-numer
     if(Math.abs(dx)>60&&Math.abs(dy)<45){if(dx<0)primary();else back();}},{passive:true});
   function fromHash(){var h=(location.hash||"").slice(1),i=steps.indexOf(h);if(i>0){for(var k=1;k<i;k++)done[k]=true;show(i,true);}}
   window.addEventListener("hashchange",fromHash);
-  fromHash();setButtons();paint();
+  render();fromHash();setButtons();paint();
 })();
 </script>
 </body>
